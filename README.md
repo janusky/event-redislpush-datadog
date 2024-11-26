@@ -26,6 +26,8 @@ Arquitectura on-premise
 Redis actúa como middleware, almacenando y gestionando la comunicación entre el Producer y Consumer.
 El agente de Datadog recibe métricas del Consumer, lo que permite el monitoreo centralizado.
 
+Manager Queue debería gestionar el trafico de peticiones y los errores de eventos que no pueden ser procesados (enviar a `Retry Logic`) 
+
 ## Objetivos
 
 Desacoplar registros de logs y administrar como eventos dentro de arquitectura para guardarlos en base de datos Datadog.
@@ -159,4 +161,5 @@ EOF
 
 * Manejo de Errores
 * Seguridad
-* S
+* Escalamiento (K8s HPA, Docker Swarm)
+* Test de estrés
