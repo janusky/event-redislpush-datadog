@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  queue:
+    image: "redis:alpine"
+    container_name: queue
+    restart: always
+    ports:
+      - "6379:6379"
+    networks:
+      - event-data
+
+  producer:
+    build:
+      context: ./producer
+    environment:  
+      - REDIS_HOST=queue  # Conexión a Redis
+    ports:
+      - "5000:5000"
+    depends_on:
+      - queue
+    networks:
+      - event-data
+
+  consumer:
+    container_name: consumer
+    build:
+      context: ./consumer
+    environment:
+      - REDIS_HOST=queue  # Conexión a Redis
+      - DATADOG_API_KEY=${DATADOG_API_KEY:-3c0c3965368a6b10f7640dbda46abfd2}
+      - DATADOG_HOST=192.164.112.5
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      - queue
+    networks:
+      - event-data
+      - datadog-net
+    # extra_hosts:
+    #   - datadog:192.164.112.5
+
+  app-producer:
+    build:
+      context: ./app-producer
+    entrypoint: 
+      - PRODUCER_HOST=producer
+    depends_on:
+      - producer    # Asegura que el productor Python esté disponible
+    volumes:
+      - ./app-producer/json_files:/app/json_files # Mapea el directorio local de archivos JSON al contenedor
+    ports:
+      - "5001:5000" # Cambié el puerto 5000 a 5001 para evitar conflictos con producer
+    # extra_hosts:
+    #   - producer:192.164.112.3
+    networks:
+      - event-data
+
+networks:
+  event-data:
+    driver: bridge
+  datadog-net:
+    external: true

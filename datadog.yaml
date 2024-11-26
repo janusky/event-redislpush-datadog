@@ -1,0 +1,43 @@
+version: "3.8"
+
+services:
+  redis:
+    image: "redis:alpine"
+    restart: always
+    networks:
+      - datadog-net
+
+  datadog:
+    image: datadog/agent:7.28.0
+    container_name: datadog
+    depends_on:
+      - redis
+    environment:
+      - DD_API_KEY=${DATADOG_API_KEY:-3c0c3965368a6b10f7640dbda46abfd2}
+      - DD_SITE=datadoghq.com
+      - DD_LOGS_ENABLED=true
+      - DD_LOGS_CONFIG_DOCKER_CONTAINER_USE_FILE=true # To read log from file instead of the docker socket
+      - DD_APP_KEY=3c0c3965368a6b10f7640dbda46abfd2
+      # APM
+      - DD_APM_ENABLED=true
+      - DD_BIND_HOST=0.0.0.0
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /proc/:/host/proc/:ro
+      - /sys/fs/cgroup:/host/sys/fs/cgroup:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "-X", "HEAD", "http://localhost:8126"]
+      interval: 10s
+      timeout: 2s
+      retries: 2
+    ports:
+      - "8126:8126" # Puerto APM
+      - "8125:8125/udp" # Puerto DogStatsD para métricas
+    networks:
+      datadog-net:
+        ipv4_address: 192.164.112.5
+
+networks:
+  datadog-net:
+    external: true
